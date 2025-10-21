@@ -12,12 +12,20 @@
         <p v-if="item.description" class="mt-2 text-sm text-slate-600 whitespace-pre-line">{{ item.description }}</p>
         <div v-if="item.attachments && item.attachments.length" class="mt-3 flex flex-wrap gap-2">
           <a
-            v-for="url in item.attachments"
-            :key="url"
-            class="inline-flex items-center rounded border border-emerald-200 px-2 py-1 text-xs text-emerald-600"
-            :href="url"
+            v-for="attachment in formatAttachments(item.attachments)"
+            :key="attachment.original"
+            class="inline-flex items-center overflow-hidden rounded border border-emerald-200 text-xs text-emerald-600"
+            :href="attachment.url"
             target="_blank"
-          >查看附件</a>
+            rel="noopener noreferrer"
+          >
+            <template v-if="attachment.isImage">
+              <img :src="attachment.url" alt="附件预览" class="h-20 w-20 object-cover" />
+            </template>
+            <template v-else>
+              <span class="px-2 py-1">查看附件</span>
+            </template>
+          </a>
         </div>
       </div>
     </div>
@@ -43,6 +51,30 @@ defineProps({
     default: () => [],
   },
 });
+
+const apiBase = (import.meta.env.VITE_API_BASE as string | undefined) || 'http://localhost:8000';
+
+const resolveAttachmentUrl = (url: string) => {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+  const normalizedBase = apiBase.replace(/\/$/, '');
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  return `${normalizedBase}${normalizedPath}`;
+};
+
+const isImageAttachment = (url: string) => {
+  const cleanUrl = url.split('?')[0] || '';
+  return /\.(png|jpe?g|gif|bmp|webp|svg)$/i.test(cleanUrl);
+};
+
+const formatAttachments = (attachments: string[] = []) =>
+  attachments.map((url) => ({
+    original: url,
+    url: resolveAttachmentUrl(url),
+    isImage: isImageAttachment(url),
+  }));
 
 const formatType = (type: string) => {
   const map: Record<string, string> = {
