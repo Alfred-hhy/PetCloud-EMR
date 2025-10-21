@@ -1,0 +1,33 @@
+# 测试规格（API 验收标准）
+
+目标：为已存在的 petcloud-emr 代码生成自动化 API 测试，并根据测试结果修复问题，保持现有结构不大改。
+
+范围：
+- 后端：FastAPI + SQLite，路径统一前缀 /api
+- 模块：auth、pets、weights、feedings、vaccines、dewormings、records（含 attachments、prescriptions）、grants、reminders
+- 角色：OWNER、VET、CLINIC_ADMIN（JWT）
+
+测试维度：
+1) 认证与权限
+   - 注册/登录成功返回 JWT，错误凭据失败
+   - 访问需要鉴权的接口未携带/无效 JWT → 401
+   - 非 owner / 无授权访问宠物资源 → 403
+2) 宠物 & 子资源 CRUD
+   - 宠物创建/查询/更新/删除
+   - 体重/喂养日志新增/查询
+   - 疫苗/驱虫新增/查询，下一针/下次日期字段有效
+3) 病历 & 处方 & 上传
+   - VET/被授权者可创建病历与处方
+   - attachments 上传返回可访问 URL，磁盘存在
+4) 授权
+   - owner 向 VET/CLINIC_ADMIN 授权 read/write/all（含过期时间）
+   - 过期授权失效
+5) 提醒
+   - /api/reminders/upcoming?days=30 返回未来日期的项
+   - 边界值：days=0、days=1
+6) 回归与健壮性
+   - 404/422 场景覆盖
+   - JSON schema 与 Pydantic 校验
+
+非目标：
+- 复杂合规、国际化、大规模性能压测

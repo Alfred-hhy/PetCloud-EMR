@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from .user import UserRead
 
@@ -38,6 +38,29 @@ class AccessGrantBase(BaseModel):
     grantee_user_id: int
     scope: str = Field(regex="^(read|write|all)$", default="read")
     expires_at: Optional[datetime] = None
+
+    @validator("expires_at", pre=True)
+    def parse_expires_at(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, date):
+            return datetime.combine(value, time.min)
+        if isinstance(value, str):
+            trimmed = value.strip()
+            if not trimmed:
+                return None
+            for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
+                try:
+                    return datetime.strptime(trimmed, fmt)
+                except ValueError:
+                    continue
+            try:
+                return datetime.fromisoformat(trimmed)
+            except ValueError as exc:
+                raise ValueError("invalid datetime format") from exc
+        return value
 
 
 class AccessGrantCreate(AccessGrantBase):
@@ -91,6 +114,17 @@ class VaccineRecordBase(BaseModel):
     dose_number: Optional[int] = None
     injected_at: date
     next_due: Optional[date] = None
+
+    @validator("batch_no", "dose_number", "next_due", pre=True)
+    def empty_to_none(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            trimmed = value.strip()
+            if not trimmed:
+                return None
+            return trimmed
+        return value
 
 
 class VaccineRecordCreate(VaccineRecordBase):

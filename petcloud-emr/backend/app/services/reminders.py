@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -8,7 +8,7 @@ from app.models import Pet, User
 from app.schemas import ReminderItem
 
 
-def _to_date(value) -> datetime.date | None:
+def _to_date(value) -> date | None:
     if value is None:
         return None
     if isinstance(value, datetime):
